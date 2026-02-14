@@ -1,0 +1,40 @@
+Recursos y Referencias - Organizatext
+
+DOCUMENTACIÓN TÉCNICA:
+- Next.js App Router: https://nextjs.org/docs/app
+- FastAPI Tutorial: https://fastapi.tiangolo.com/tutorial/
+- Wails Documentation: https://wails.io/docs/introduction
+- Ollama Models: https://ollama.com/library
+- ChromaDB Guide: https://docs.trychroma.com/
+
+ARTÍCULOS Y PAPERS:
+- "RAG for Local LLMs": https://arxiv.org/abs/2401.xxxxx
+- "Quantization Techniques": https://huggingface.co/blog/quantization
+- "Web Workers Performance": https://web.dev/workers-overview/
+
+HERRAMIENTAS DESARROLLO:
+- VS Code: https://code.visualstudio.com/
+- Docker Desktop: https://www.docker.com/products/docker-desktop
+- MongoDB Compass: https://www.mongodb.com/products/compass
+- Postman: https://www.postman.com/
+- n8n workflows: https://n8n.io/workflows
+
+COMUNIDADES:
+- Ollama Discord: https://discord.gg/ollama
+- ChromaDB Slack: https://trychroma.com/slack
+- Next.js Discussions: https://github.com/vercel/next.js/discussions
+
+CONTACTOS SOPORTE:
+- Ollama support: support@ollama.com
+- MongoDB help: support@mongodb.com
+- Vercel: support@vercel.com
+
+LICENCIAS:
+- Next.js: MIT
+- FastAPI: MIT
+- Ollama: MIT
+- Qwen3: Apache 2.0
+- ChromaDB: Apache 2.0
+
+Keywords: recursos, documentación, referencias, links
+Categoría: Documentación

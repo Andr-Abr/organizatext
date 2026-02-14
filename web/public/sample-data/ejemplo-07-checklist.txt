@@ -1,0 +1,40 @@
+Checklist Pre-Deploy - Organizatext v1.0
+
+FRONTEND WEB:
+☑ Tests unitarios pasando (npm test)
+☑ Build de producción sin warnings (npm run build)
+☑ Lighthouse score >90 en todas las métricas
+☐ Meta tags SEO completos
+☐ Open Graph images configuradas
+☐ Favicon en todos los tamaños
+
+BACKEND:
+☑ Variables de entorno en Render configuradas
+☑ MongoDB Atlas M0 provisionado
+☐ Rate limiting activado (10 req/min)
+☐ CORS configurado correctamente
+☐ Health check endpoint respondiendo
+☐ Logs en CloudWatch/Datadog
+
+SEGURIDAD:
+☑ JWT_SECRET rotado (no usar default)
+☑ Passwords hasheados con bcrypt (cost=12)
+☐ HTTPS forzado en producción
+☐ Headers de seguridad (helmet.js)
+☐ Sanitización de inputs (XSS protection)
+
+DOCUMENTACIÓN:
+☑ README.md completo
+☐ API docs actualizados (FastAPI /docs)
+☐ Changelog.md con versiones
+☐ Contributing guidelines
+
+MONITOREO:
+☐ Sentry configurado para error tracking
+☐ Google Analytics o alternativa privacy-friendly
+☐ Uptime monitoring (UptimeRobot)
+
+Responsable: Andrés Abr (contacto: github.com/Andr-Abr)
+Fecha objetivo: 28/02/2026
+
+Keywords: checklist, deploy, qa, producción

@@ -1,0 +1,93 @@
+# Dependencias
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Entornos virtuales
+venv/
+env/
+ENV/
+.venv
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Next.js
+web/.next/
+web/out/
+web/build/
+web/.vercel
+
+# Build outputs
+dist/
+build/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Wails
+local/frontend/build/
+local/frontend/frontend/dist/
+
+# Go
+local/backend/tmp/
+*.exe~
+
+# Bases de datos locales
+*.db
+*.sqlite
+*.sqlite3
+chroma_db/
+
+# Modelos (muy grandes, no subir a git)
+*.bin
+*.gguf
+models/
+
+# Docker volumes
+docker-volumes/
+
+# Temporal
+tmp/
+temp/
+*.tmp
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Certificados
+*.pem
+*.key
+*.crt
+
+# Backups
+*.bak
+*.backup

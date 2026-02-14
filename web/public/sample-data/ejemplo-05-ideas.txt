@@ -1,0 +1,26 @@
+Brainstorming: Nuevas Funcionalidades para Organizatext
+
+IDEAS CORTO PLAZO (Sprint 1-2):
+✓ Export a formato JSON además de ZIP
+✓ Búsqueda full-text dentro de archivos procesados
+✓ Filtros por fecha de procesamiento
+- Dark mode toggle
+- Keyboard shortcuts (Ctrl+P para procesar)
+
+IDEAS MEDIANO PLAZO (Q2 2026):
+- Integración con Google Drive API para import/export directo
+- Plugin system para procesadores custom
+- Soporte OCR para PDFs escaneados (https://tesseract.js.org)
+- Mobile app (React Native)
+
+IDEAS LARGO PLAZO (Q3-Q4 2026):
+- Collaborative editing (CRDT)
+- Sync P2P (sin backend centralizado)
+- Embeddings más ligeros (alternativa a sentence-transformers)
+- API pública para developers
+
+FEEDBACK USUARIOS:
+Juan Pérez (juan@empresa.com) sugiere: "Sería útil poder mergear archivos antes de exportar"
+María (maria@startup.co) comenta: "¿Podrían agregar templates de categorías pre-definidas?"
+
+Keywords: ideas, roadmap, features, brainstorming

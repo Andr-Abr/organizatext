@@ -1,0 +1,38 @@
+Snippets de Código Útiles - Organizatext Dev
+
+// Web Worker: Procesar archivo
+self.onmessage = async (e) => {
+  const { file, fileId } = e.data;
+  const text = await file.text();
+  const result = processText(text);
+  self.postMessage({ fileId, result });
+};
+
+// Cifrado AES-GCM (Web Crypto API)
+async function encrypt(data, password) {
+  const encoder = new TextEncoder();
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const key = await deriveKey(password, salt);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    encoder.encode(data)
+  );
+  return { ciphertext, salt, iv };
+}
+
+// Fiber (Go): Handler básico
+func healthHandler(c *fiber.Ctx) error {
+  return c.JSON(fiber.Map{
+    "status": "ok",
+    "service": "organizatext-mcp",
+  })
+}
+
+URLs de referencia:
+- https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API
+- https://gofiber.io/docs/
+- https://docs.github.com/webhooks
+
+Keywords: código, snippets, desarrollo, referencia

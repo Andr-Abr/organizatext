@@ -1,0 +1,106 @@
+# docker-compose.yml
+# Servicios para la versión LOCAL de Organizatext
+# NO incluye Ollama (debe instalarse nativamente)
+
+version: '3.8'
+
+services:
+  # ============================================
+  # MongoDB - Base de datos para usuarios y metadata
+  # ============================================
+  mongodb:
+    image: mongo:8.0
+    container_name: organizatext-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: organizatext
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - organizatext-network
+
+  # ============================================
+  # ChromaDB - Vector database para embeddings
+  # ============================================
+  chromadb:
+    image: chromadb/chroma:0.5.23
+    container_name: organizatext-chroma
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+    networks:
+      - organizatext-network
+
+  # ============================================
+  # n8n - Orquestador de workflows
+  # ============================================
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: organizatext-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin123
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=America/Bogota
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n-workflows:/workflows
+    networks:
+      - organizatext-network
+    depends_on:
+      - chromadb
+
+  # ============================================
+  # Fiber (Go) - Backend MCP
+  # ============================================
+  fiber-mcp:
+    build:
+      context: ./local/backend
+      dockerfile: Dockerfile
+    container_name: organizatext-fiber
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - FIBER_PORT=3001
+      - FIBER_ENV=development
+      - OLLAMA_HOST=host.docker.internal
+      - OLLAMA_PORT=11434
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+      - N8N_WEBHOOK_URL=http://n8n:5678/webhook/rag-chat
+    networks:
+      - organizatext-network
+    depends_on:
+      - chromadb
+      - n8n
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  mongodb_data:
+    driver: local
+  chroma_data:
+    driver: local
+  n8n_data:
+    driver: local
+
+networks:
+  organizatext-network:
+    driver: bridge
