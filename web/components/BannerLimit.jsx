@@ -1,9 +1,9 @@
 // web/components/BannerLimit.jsx
-// Banner informativo sobre límites de uso (texto exacto según requisitos)
-
-import { UI_TEXTS } from '@/lib/constants';
-
 export default function BannerLimit() {
+  const handleReadmeClick = () => {
+    window.open('https://github.com/Andr-Abr/organizatext/blob/main/README.md', '_blank');
+  };
+
   return (
     <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded-r-lg">
       <div className="flex items-start">
@@ -23,13 +23,14 @@ export default function BannerLimit() {
         </div>
         <div className="ml-3 flex-1">
           <p className="text-sm text-blue-700">
-            {UI_TEXTS.BANNER.split('**').map((part, index) =>
-              index % 2 === 1 ? (
-                <strong key={index}>{part}</strong>
-              ) : (
-                <span key={index}>{part}</span>
-              )
-            )}
+            <strong>Límite de uso:</strong> máximo 50 MB total, 10 MB por archivo, hasta 200 archivos.
+            Para procesar más, y otros formatos (pdf, word, md) ejecuta la app localmente{' '}
+            <button
+              onClick={handleReadmeClick}
+              className="underline font-medium hover:text-blue-900 text-blue-700"
+            >
+              (ver README)
+            </button>
           </p>
         </div>
       </div>

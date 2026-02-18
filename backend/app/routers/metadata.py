@@ -1,6 +1,6 @@
 # backend/app/routers/metadata.py
 # Rutas para gestión de metadata cifrada
-
+from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from app.models import MetadataCreate, MetadataResponse, MetadataList, User
@@ -124,3 +124,28 @@ async def delete_metadata(
         )
     
     return None
+
+@router.delete("/all/", status_code=status.HTTP_200_OK)
+async def delete_all_metadata(current_user: User = Depends(get_current_user)):
+    """Elimina TODA la metadata del usuario en MongoDB"""
+    db = get_database()
+    result = db.user_metadata.delete_many({"user_id": current_user.id})
+    return {"deleted": result.deleted_count, "message": f"{result.deleted_count} registros eliminados"}
+
+
+class FileIdList(BaseModel):
+    file_ids: list
+
+
+@router.post("/delete-selected/", status_code=status.HTTP_200_OK)
+async def delete_selected_metadata(
+    body: FileIdList,
+    current_user: User = Depends(get_current_user)
+):
+    """Elimina metadata seleccionada por lista de file_ids"""
+    db = get_database()
+    result = db.user_metadata.delete_many({
+        "user_id": current_user.id,
+        "file_id": {"$in": body.file_ids}
+    })
+    return {"deleted": result.deleted_count}
