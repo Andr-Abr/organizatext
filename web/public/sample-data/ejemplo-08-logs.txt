@@ -1,0 +1,25 @@
+Logs de Desarrollo - Organizatext
+
+[2026-02-14 10:23:45] INFO: Worker pool initialized (size=2)
+[2026-02-14 10:23:47] INFO: IndexedDB schema v2 migrated successfully
+[2026-02-14 10:24:12] WARN: File size exceeds 10MB limit (actual: 12.3MB)
+[2026-02-14 10:24:15] INFO: User selected subset of files (8/15)
+[2026-02-14 10:24:20] INFO: Processing started (8 files, 42.1MB total)
+[2026-02-14 10:24:22] INFO: [Worker 1] Processing: documento.txt (5.2MB)
+[2026-02-14 10:24:22] INFO: [Worker 2] Processing: notas.txt (3.8MB)
+[2026-02-14 10:24:35] INFO: [Worker 1] Extracted: 23 URLs, 15 emails, 8 keywords
+[2026-02-14 10:24:38] INFO: [Worker 2] Detected PII: 3 phone numbers
+[2026-02-14 10:25:01] INFO: All files processed successfully
+[2026-02-14 10:25:03] INFO: Export initiated (ZIP size: 38.2MB)
+[2026-02-14 10:25:10] SUCCESS: Export completed: organizatext-export-20260214.zip
+
+[2026-02-14 10:30:15] ERROR: MongoDB connection timeout
+[2026-02-14 10:30:15] INFO: Retrying connection (attempt 1/3)...
+[2026-02-14 10:30:20] SUCCESS: MongoDB connected (mongodb://localhost:27017)
+
+[2026-02-14 11:45:32] INFO: Ollama model loaded: josiefied/qwen3:14b-q4_k_m
+[2026-02-14 11:45:35] INFO: RAG query: "Resumir documentos sobre presupuesto"
+[2026-02-14 11:45:42] INFO: Vector search returned 5 chunks (avg similarity: 0.87)
+[2026-02-14 11:45:58] INFO: LLM response generated (347 tokens, 2.3s)
+
+Keywords: logs, debugging, sistema, monitoreo

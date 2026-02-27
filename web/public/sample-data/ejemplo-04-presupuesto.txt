@@ -1,0 +1,26 @@
+Presupuesto Proyecto Organizatext - Q1 2026
+
+INFRAESTRUCTURA:
+- Vercel Pro: $20/mes x 3 meses = $60
+- MongoDB Atlas M10: $57/mes x 3 meses = $171
+- Render Standard: $25/mes x 3 meses = $75
+Total infraestructura: $306
+
+HERRAMIENTAS:
+- GitHub Copilot: $10/mes x 3 meses = $30
+- Figma Professional: $15/mes x 3 meses = $45
+Total herramientas: $75
+
+DESARROLLO:
+- Horas desarrollo: 320h x $25/h = $8,000
+- Testing QA: 40h x $20/h = $800
+- Documentación: 20h x $20/h = $400
+Total desarrollo: $9,200
+
+TOTAL PROYECTO: $9,581
+
+Aprobado por: María Directora (maria@empresa.com)
+Fecha aprobación: 10/02/2026
+
+Keywords: presupuesto, finanzas, costos, proyecto
+Categoría: Finanzas

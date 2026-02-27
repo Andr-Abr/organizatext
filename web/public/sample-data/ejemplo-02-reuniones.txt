@@ -1,0 +1,23 @@
+Agenda de Reuniones - Semana del 17 al 21 Feb 2026
+
+Lunes 17:
+- 9:00 AM: Kickoff proyecto Organizatext
+- 2:00 PM: Review con cliente (https://meet.google.com/abc-defg-hij)
+
+Martes 18:
+- 10:30 AM: Standup equipo dev
+- 4:00 PM: Demo funcionalidades
+
+Miércoles 19:
+- Día completo: Workshop RAG y LLMs locales
+- Ubicación: Oficina principal, Calle 100 #15-20, Bogotá
+
+Jueves 20:
+- 11:00 AM: Reunión financiera - revisar presupuesto Q1
+- Contacto: ana.lopez@finanzas.com
+
+Viernes 21:
+- 3:00 PM: Retrospectiva sprint
+- Zoom: https://zoom.us/j/123456789
+
+Keywords: calendario, reuniones, productividad

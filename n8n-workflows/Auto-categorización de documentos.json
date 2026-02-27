@@ -1,0 +1,115 @@
+{
+  "name": "Auto-categorización de documentos",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "066b2726-39da-4e54-b83e-521122d8c6bf",
+      "name": "Manual Trigger"
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8001/api/v1/documents",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "fefdccf0-1ed7-493d-95b1-8b0544db7938",
+      "name": "Obtener Documentos"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Categorías y sus keywords asociadas\nconst categories = {\n  \"Finanzas\": [\"finanzas\", \"dinero\", \"inversión\", \"banco\", \"crédito\", \"ahorro\", \"bitcoin\", \"crypto\"],\n  \"Proyectos\": [\"proyecto\", \"desarrollo\", \"implementación\", \"plan\", \"roadmap\"],\n  \"Ideas\": [\"idea\", \"concepto\", \"brainstorm\", \"propuesta\", \"innovación\"],\n  \"Investigación\": [\"investigación\", \"estudio\", \"análisis\", \"research\", \"paper\"],\n  \"Personal\": [\"personal\", \"salud\", \"familia\", \"viaje\", \"hobby\"],\n  \"Trabajo\": [\"trabajo\", \"reunión\", \"cliente\", \"reporte\", \"deadline\"]\n};\n\n// Obtener documentos del paso anterior\nconst response = $input.first().json;\nconst documents = response.documents || [];\nconst results = [];\n\nfor (const docData of documents) {\n  const tags = docData.metadata?.tags || [];\n  \n  if (tags.length === 0) {\n    continue; // Skip si no tiene tags\n  }\n  \n  // Calcular coincidencias por categoría\n  const scores = {};\n  \n  for (const [category, keywords] of Object.entries(categories)) {\n    let matches = 0;\n    for (const tag of tags) {\n      const tagLower = tag.toLowerCase();\n      for (const keyword of keywords) {\n        if (tagLower.includes(keyword) || keyword.includes(tagLower)) {\n          matches++;\n        }\n      }\n    }\n    scores[category] = matches;\n  }\n  \n  // Encontrar categoría con más coincidencias\n  let bestCategory = \"Sin clasificar\";\n  let maxScore = 0;\n  \n  for (const [category, score] of Object.entries(scores)) {\n    if (score > maxScore) {\n      maxScore = score;\n      bestCategory = category;\n    }\n  }\n  \n  // Solo asignar si hay al menos 1 coincidencia\n  if (maxScore > 0) {\n    results.push({\n      json: {\n        id: docData.id,\n        filename: docData.metadata?.filename,\n        tags: tags,\n        suggestedCategory: bestCategory,\n        confidence: maxScore,\n        currentCategory: docData.metadata?.category || \"Sin clasificar\"\n      }\n    });\n  }\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "53f85ff8-4f92-4f69-9c2a-fe49605a59f7",
+      "name": "Analizar Keywords"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=http://127.0.0.1:8001/api/v1/documents/{{ $json.id }}/metadata",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"id\": \"{{ $json.id }}\",\n  \"metadata\": {\n    \"category\": \"{{ $json.suggestedCategory }}\",\n    \"tags\": {{ JSON.stringify($json.tags) }},\n    \"filename\": \"{{ $json.filename }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        0
+      ],
+      "id": "268f0830-36c8-4b1f-8c97-579b7adc9459",
+      "name": "Actualizar Categoría"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Obtener Documentos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Documentos": {
+      "main": [
+        [
+          {
+            "node": "Analizar Keywords",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analizar Keywords": {
+      "main": [
+        [
+          {
+            "node": "Actualizar Categoría",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "6875f593-bc0e-49b6-b166-fab2ab846a06",
+  "meta": {
+    "instanceId": "208851ebc302c4f819b914a709964f1b61e0de338e0bb762c7e48622a3d36f20"
+  },
+  "id": "fsdTPCC9uU4a-EIVJ5Vnm",
+  "tags": []
+}

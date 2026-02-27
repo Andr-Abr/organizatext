@@ -1,0 +1,46 @@
+# Dependencias
+**/node_modules/
+**/package-lock.json
+web/.next/
+
+# Builds
+**/dist/
+**/build/
+**/.task/
+**/bin/
+
+# Go
+*.exe
+go.sum
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+
+# Datos locales
+**/data/
+**/uploads/
+*.db
+*.lance/
+
+# Secrets
+.env
+.env.local
+**/.env
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Releases
+*.zip

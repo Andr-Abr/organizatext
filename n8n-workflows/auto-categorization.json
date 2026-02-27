@@ -1,0 +1,71 @@
+{
+  "name": "Auto-categorización de documentos",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "id": "manual-trigger-12345",
+      "name": "Manual Trigger"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8001/api/v1/documents",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [208, 0],
+      "id": "http-get-docs",
+      "name": "Obtener Documentos"
+    },
+    {
+      "parameters": {
+        "jsCode": "const categories = {\n  \"Finanzas\": [\"finanzas\", \"dinero\", \"inversión\", \"banco\", \"crédito\", \"ahorro\", \"bitcoin\", \"crypto\"],\n  \"Proyectos\": [\"proyecto\", \"desarrollo\", \"implementación\", \"plan\", \"roadmap\"],\n  \"Ideas\": [\"idea\", \"concepto\", \"brainstorm\", \"propuesta\", \"innovación\"],\n  \"Investigación\": [\"investigación\", \"estudio\", \"análisis\", \"research\", \"paper\"],\n  \"Personal\": [\"personal\", \"salud\", \"familia\", \"viaje\", \"hobby\"],\n  \"Trabajo\": [\"trabajo\", \"reunión\", \"cliente\", \"reporte\", \"deadline\"]\n};\n\nconst response = $input.first().json;\nconst documents = response.documents || [];\nconst results = [];\n\nfor (const docData of documents) {\n  const tags = docData.metadata?.tags || [];\n  \n  if (tags.length === 0) continue;\n  \n  const scores = {};\n  \n  for (const [category, keywords] of Object.entries(categories)) {\n    let matches = 0;\n    for (const tag of tags) {\n      const tagLower = tag.toLowerCase();\n      for (const keyword of keywords) {\n        if (tagLower.includes(keyword) || keyword.includes(tagLower)) {\n          matches++;\n        }\n      }\n    }\n    scores[category] = matches;\n  }\n  \n  let bestCategory = \"Sin clasificar\";\n  let maxScore = 0;\n  \n  for (const [category, score] of Object.entries(scores)) {\n    if (score > maxScore) {\n      maxScore = score;\n      bestCategory = category;\n    }\n  }\n  \n  if (maxScore > 0) {\n    results.push({\n      json: {\n        id: docData.id,\n        filename: docData.metadata?.filename,\n        tags: tags,\n        suggestedCategory: bestCategory,\n        confidence: maxScore,\n        currentCategory: docData.metadata?.category || \"Sin clasificar\"\n      }\n    });\n  }\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [416, 0],
+      "id": "code-analyze",
+      "name": "Analizar Keywords"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=http://127.0.0.1:8001/api/v1/documents/{{ $json.id }}/metadata",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"id\": \"{{ $json.id }}\",\n  \"metadata\": {\n    \"category\": \"{{ $json.suggestedCategory }}\",\n    \"tags\": {{ JSON.stringify($json.tags) }},\n    \"filename\": \"{{ $json.filename }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [624, 0],
+      "id": "http-update",
+      "name": "Actualizar Categoría"
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{"node": "Obtener Documentos", "type": "main", "index": 0}]]
+    },
+    "Obtener Documentos": {
+      "main": [[{"node": "Analizar Keywords", "type": "main", "index": 0}]]
+    },
+    "Analizar Keywords": {
+      "main": [[{"node": "Actualizar Categoría", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
