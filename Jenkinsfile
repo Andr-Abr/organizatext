@@ -21,7 +21,7 @@ pipeline {
         stage('Build Frontend') {
             steps {
                 dir('web') {
-                    bat 'npm ci'
+                    bat 'npm install'
                     bat 'npm run build'
                     echo '✅ Frontend compilado'
                 }
