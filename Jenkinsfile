@@ -44,9 +44,10 @@ pipeline {
             }
             steps {
                 dir('web') {
-                    bat 'npm install -g vercel'
-                    bat "vercel --token %VERCEL_TOKEN% --prod --yes"
-                    echo '✅ Deploy completado'
+                    bat '''
+                    npm install -g vercel
+                    vercel --token %VERCEL_TOKEN% --prod --yes --scope andr-abr --name organizatext-web
+                    '''
                 }
             }
         }
