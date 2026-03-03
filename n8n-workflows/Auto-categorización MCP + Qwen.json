@@ -1,0 +1,185 @@
+{
+  "name": "Auto-categorización MCP + Qwen",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "95a811b0-b776-4649-8b70-ad6a4225cd07",
+      "name": "Manual Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8001/mcp/tools/call",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"name\": \"get_documents\",\n  \"input\": {}\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "9e1c6ef3-610c-4e55-ad70-da0669869607",
+      "name": "MCP: get_documents"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst docs = data.result || [];\nconst todasLasCategorias = data.existing_categories || ['Sin clasificar'];\n\nif (docs.length === 0) {\n  return [{ json: { error: 'No hay documentos' } }];\n}\n\n// Filtrar: quitar categorías que son títulos largos o frases (>4 palabras)\n// Solo dejar las que parecen nombres de categoría reales\nconst categorias = todasLasCategorias.filter(cat => {\n  const palabras = cat.trim().split(/\\s+/);\n  return palabras.length <= 4 && cat.length <= 40;\n});\n\n// Asegurar que \"Sin clasificar\" siempre esté\nif (!categorias.includes('Sin clasificar')) {\n  categorias.push('Sin clasificar');\n}\n\n// Formatear documentos para el prompt\nlet listaDocs = '';\nfor (const doc of docs) {\n  const tags = doc.metadata?.tags || [];\n  const preview = (doc.text || '').slice(0, 400);\n  listaDocs += `\\nID: ${doc.id}\\nArchivo: ${doc.metadata?.filename || doc.id}\\nEtiquetas: ${tags.join(', ') || 'ninguna'}\\nTexto: ${preview}\\n---`;\n}\n\nconst prompt = `Eres un asistente que categoriza documentos. Tu tarea es analizar cada documento y asignarle la categoría más apropiada.\n\nCATEGORÍAS DISPONIBLES (usa EXACTAMENTE estos nombres):\n${categorias.join('\\n')}\n\nREGLAS:\n- Analiza las etiquetas y el texto del documento\n- Elige la categoría que mejor describa el tema principal del documento\n- Si ninguna categoría encaja claramente, usa: Sin clasificar\n- NO inventes categorías nuevas, solo usa las de la lista de arriba\n\nDOCUMENTOS:\n${listaDocs}\n\nResponde ÚNICAMENTE con un array JSON válido, sin texto extra, sin explicaciones, sin bloques de código:\n[\n  {\"id\": \"id_documento\", \"category\": \"NombreCategoria\", \"reason\": \"motivo breve\"},\n  ...\n]`;\n\nreturn [{ json: { prompt, total: docs.length, categorias_disponibles: categorias } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        0
+      ],
+      "id": "31538336-d3a2-4553-b8a6-33a10e4db2d4",
+      "name": "Construir Prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"goekdenizguelmez/JOSIEFIED-Qwen3:14b-q4_k_m\",\n  \"prompt\": {{ JSON.stringify($json.prompt) }},\n  \"stream\": false\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 300000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        608,
+        0
+      ],
+      "id": "3d1a8cb5-1a4f-4019-9563-3677dfc14bfc",
+      "name": "Llamar a Qwen"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parsear respuesta de Qwen\nconst raw = $input.first().json.response || '';\n\nlet decisiones = [];\n\ntry {\n  // Qwen a veces envuelve el JSON en texto o en bloques ```json\n  // Buscar el array JSON dentro de la respuesta\n  const match = raw.match(/\\[\\s*\\{[\\s\\S]*?\\}\\s*\\]/);\n  if (match) {\n    decisiones = JSON.parse(match[0]);\n  } else {\n    decisiones = JSON.parse(raw.trim());\n  }\n} catch (e) {\n  // Si falla el parseo, loguear y retornar error\n  return [{ json: { error: 'No se pudo parsear respuesta de Qwen', raw: raw.slice(0, 300) } }];\n}\n\n// Filtrar entradas inválidas\nconst validas = decisiones.filter(d => d.id && d.category);\n\nconsole.log(`Qwen categorizó ${validas.length} documentos`);\n\n// Devolver uno por uno para que el siguiente nodo itere sobre cada uno\nreturn validas.map(d => ({ json: d }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        0
+      ],
+      "id": "89b6177d-b7d8-4474-ac91-8bae9762b1eb",
+      "name": "Parsear Respuesta"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8001/mcp/tools/call",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \"update_category\",\n  \"input\": {\n    \"id\": \"{{ $json.id }}\",\n    \"category\": \"{{ $json.category }}\",\n    \"reason\": {{ JSON.stringify($json.reason || '') }}\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1008,
+        0
+      ],
+      "id": "3fee08cc-9c88-4b3f-ae72-75a405c52bce",
+      "name": "MCP: update_category"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "MCP: get_documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MCP: get_documents": {
+      "main": [
+        [
+          {
+            "node": "Construir Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Construir Prompt": {
+      "main": [
+        [
+          {
+            "node": "Llamar a Qwen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Llamar a Qwen": {
+      "main": [
+        [
+          {
+            "node": "Parsear Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear Respuesta": {
+      "main": [
+        [
+          {
+            "node": "MCP: update_category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "802a81a9-e923-4d09-9e3c-5f458dbbbf27",
+  "meta": {
+    "instanceId": "208851ebc302c4f819b914a709964f1b61e0de338e0bb762c7e48622a3d36f20"
+  },
+  "id": "4hS05fYJ2IPJv4YuYeJjc",
+  "tags": []
+}

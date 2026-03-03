@@ -72,6 +72,7 @@ func main() {
 
 	// Rutas
 	setupRoutes(app)
+	setupMCPRoutes(app)
 
 	// Puerto
 	port := os.Getenv("PORT")

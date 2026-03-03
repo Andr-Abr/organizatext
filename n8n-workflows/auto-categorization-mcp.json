@@ -1,0 +1,123 @@
+{
+  "name": "Auto-categorización MCP + Qwen",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "id": "trigger-001",
+      "name": "Manual Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8001/mcp/tools/call",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"name\": \"get_documents\",\n  \"input\": {}\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [208, 0],
+      "id": "mcp-get-docs",
+      "name": "MCP: get_documents"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst docs = data.result || [];\nconst todasLasCategorias = data.existing_categories || ['Sin clasificar'];\n\nif (docs.length === 0) {\n  return [{ json: { error: 'No hay documentos' } }];\n}\n\n// Filtrar: solo categorías cortas (<=4 palabras, <=40 chars)\nconst categorias = todasLasCategorias.filter(cat => {\n  const palabras = cat.trim().split(/\\s+/);\n  return palabras.length <= 4 && cat.length <= 40;\n});\n\nif (!categorias.includes('Sin clasificar')) {\n  categorias.push('Sin clasificar');\n}\n\n// Formatear documentos para el prompt\nlet listaDocs = '';\nfor (const doc of docs) {\n  const tags = doc.metadata?.tags || [];\n  const preview = (doc.text || '').slice(0, 400);\n  listaDocs += `\\nID: ${doc.id}\\nArchivo: ${doc.metadata?.filename || doc.id}\\nEtiquetas: ${tags.join(', ') || 'ninguna'}\\nTexto: ${preview}\\n---`;\n}\n\nconst prompt = `Eres un asistente que categoriza documentos. Tu tarea es analizar cada documento y asignarle la categoría más apropiada.\\n\\nCATEGORÍAS DISPONIBLES (usa EXACTAMENTE estos nombres):\\n${categorias.join('\\n')}\\n\\nREGLAS:\\n- Analiza las etiquetas y el texto del documento\\n- Elige la categoría que mejor describa el tema principal del documento\\n- Si ninguna categoría encaja claramente, usa: Sin clasificar\\n- NO inventes categorías nuevas, solo usa las de la lista de arriba\\n\\nDOCUMENTOS:\\n${listaDocs}\\n\\nResponde ÚNICAMENTE con un array JSON válido, sin texto extra, sin explicaciones, sin bloques de código:\\n[\\n  {\"id\": \"id_documento\", \"category\": \"NombreCategoria\", \"reason\": \"motivo breve\"},\\n  ...\\n]`;\n\n// Construir el body completo serializado para evitar problemas de interpolación en n8n\nconst body = JSON.stringify({\n  model: 'goekdenizguelmez/JOSIEFIED-Qwen3:14b-q4_k_m',\n  prompt: prompt,\n  stream: false,\n  think: false,\n  options: {\n    num_ctx: 4096,\n    temperature: 0.1\n  }\n});\n\nreturn [{ json: { body, total: docs.length, categorias_disponibles: categorias } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 0],
+      "id": "build-prompt",
+      "name": "Construir Prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:11434/api/generate",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.body }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 300000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [608, 0],
+      "id": "call-qwen",
+      "name": "Llamar a Qwen"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.response || '';\n\nlet decisiones = [];\n\ntry {\n  const match = raw.match(/\\[\\s*\\{[\\s\\S]*?\\}\\s*\\]/);\n  if (match) {\n    decisiones = JSON.parse(match[0]);\n  } else {\n    decisiones = JSON.parse(raw.trim());\n  }\n} catch (e) {\n  return [{ json: { error: 'No se pudo parsear respuesta de Qwen', raw: raw.slice(0, 300) } }];\n}\n\nconst validas = decisiones.filter(d => d.id && d.category);\nconsole.log(`Qwen categorizó ${validas.length} documentos`);\nreturn validas.map(d => ({ json: d }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 0],
+      "id": "parse-response",
+      "name": "Parsear Respuesta"
+    },
+    {
+  "parameters": {
+    "method": "POST",
+    "url": "http://127.0.0.1:8001/mcp/tools/call",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={\n  \"name\": \"update_category\",\n  \"input\": {\n    \"id\": {{ JSON.stringify($json.id || undefined) }},\n    \"category\": {{ JSON.stringify($json.category || '') }},\n    \"reason\": {{ JSON.stringify($json.reason || '') }}\n  }\n}",
+    "options": {
+      "response": {
+        "response": {
+          "responseFormat": "json"
+        }
+      }
+    }
+  },
+  "type": "n8n-nodes-base.httpRequest",
+  "typeVersion": 4.4,
+  "position": [1000, 0],
+  "id": "mcp-update",
+  "name": "MCP: update_category"
+}
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{"node": "MCP: get_documents", "type": "main", "index": 0}]]
+    },
+    "MCP: get_documents": {
+      "main": [[{"node": "Construir Prompt", "type": "main", "index": 0}]]
+    },
+    "Construir Prompt": {
+      "main": [[{"node": "Llamar a Qwen", "type": "main", "index": 0}]]
+    },
+    "Llamar a Qwen": {
+      "main": [[{"node": "Parsear Respuesta", "type": "main", "index": 0}]]
+    },
+    "Parsear Respuesta": {
+      "main": [[{"node": "MCP: update_category", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "208851ebc302c4f819b914a709964f1b61e0de338e0bb762c7e48622a3d36f20"
+  }
+}
