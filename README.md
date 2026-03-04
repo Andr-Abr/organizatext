@@ -101,15 +101,20 @@
 - Deploy producción
 - CI/CD Jenkins
 
-### 🔄 En Desarrollo
-- Tests unitarios (Jest + Pytest)
-- Documentación API completa
+### 🏗️ Arquitectura del proyecto
+**Web App:**
+- Arquitectura: JAMstack + Serverless
+- Patrón: Client-side rendering + API REST
 
-### 📱 Futuro
+**App Local:**
+- Arquitectura: Monolito modular (Desktop app standalone)
+- Patrón: Cliente-servidor local (React frontend + Go backend)
+
+### 🔄 En Desarrollo
 - **i18n:** Soporte multi-idioma (ES/EN)
 - **OCR:** Procesamiento de PDFs escaneados
 - **Android App:** Kotlin nativo (ver abajo)
-
+- 
 ## 📱 Android App (Planificado)
 
 #### **MODO BÁSICO**
