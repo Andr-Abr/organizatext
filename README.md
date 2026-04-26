@@ -114,7 +114,7 @@ LLM local en dispositivo vía MediaPipe LLM Inference API. Cuatro niveles según
 
 
 ### Mobile App
-
+<img width="6424" height="2163" alt="000" src="https://github.com/user-attachments/assets/772a03c0-fcb5-41d8-9ce7-39e427debe71" />
 
 
 ## 📊 Stack Tecnológico
