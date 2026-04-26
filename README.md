@@ -25,6 +25,14 @@
 - Orquestación de workflows con n8n
 - Backend MCP (Model Context Protocol) en Go
 
+### Versión Mobile (Android)
+- **Procesamiento de archivos .txt**: Extracción de keywords con RAKE + Regex
+- **Modos Avanzados**: LLM local para análisis semántico avanzado
+- **Categorización**: Asignación manual y automática de categorías
+- **Chat**: Interfaz conversacional con documentos usando LLM
+- **Exportación**: ZIP por categorías con metadata
+- **Detección de PII**: Emails, teléfonos, documentos
+
 ## 🔑 Características Principales
 
 ### 📱 App Web (Next.js)
@@ -56,6 +64,45 @@
 - Deploy automático a Vercel
 - Polling de GitHub cada 5 min
 
+## 📱 Android App
+
+App nativa Kotlin + Jetpack Compose, 100% offline y privada.
+
+**Descargar APK:** [Releases](https://github.com/Andr-Abr/organizatext/releases/tag/v1.0.0-android)
+
+### MODO BÁSICO
+Funciona en cualquier Android 8+ (ARM 32/64-bit):
+
+- 📄 Carga de archivos .txt (Storage Access Framework, selección múltiple)
+- 🔍 Extracción automática de keywords (RAKE) + detección de URLs, emails, teléfonos
+- ⚠️ Detección de PII (datos personales)
+- 📂 Categorías con persistencia (DataStore) + exportación ZIP por categoría
+- ✏️ Edición manual de keywords por documento
+- 🔎 Visor de texto con búsqueda, navegación entre resultados y scrollbar
+- 💾 Persistencia local con Room Database
+- 🎨 Material 3 UI con soporte dark/light mode automático
+
+**Compatible con:** Android 8+ (API 26+), ARM 32-bit y 64-bit
+
+---
+
+### MODOS LLM (on-device)
+LLM local en dispositivo vía MediaPipe LLM Inference API. Cuatro niveles según RAM disponible:
+
+| Modo | Modelo | RAM mínima | Token HF |
+|---|---|---|---|
+| Compacto | Qwen 2.5 0.5B (~521MB) | 1 GB | No requerido |
+| Ultra | Gemma 3 1B (~529MB) | 2 GB | Requerido |
+| Mítico | Qwen 2.5 1.5B (~1.6GB) | 2.5 GB | No requerido |
+| HAX | Gemma 4 E4B (~2.8GB) | 3.5 GB | Requerido |
+
+- 🧠 Extracción de keywords semántica para documentos
+- 💬 Chat con documentos seleccionados
+- ⚡ Detección automática de hardware y modo recomendado
+- 🔐 100% offline una vez descargado el modelo
+
+---
+
 ## 📸 Capturas de Pantalla
 
 ### Web App
@@ -64,6 +111,11 @@
 
 ### Desktop App
 <img width="1896" height="2152" alt="Local" src="https://github.com/user-attachments/assets/1d186028-40b3-4e89-8d22-7c059daad275" />
+
+
+### Mobile App
+
+
 
 ## 📊 Stack Tecnológico
 
@@ -92,6 +144,12 @@
 - Vercel (Deploy)
 - n8n (Automatización)
 
+**Mobile:**
+- Kotlin + Jetpack Compose + Material 3
+- Room, Hilt, DataStore, Navigation Compose
+- MediaPipe tasks-genai 0.10.27
+- AGP 8.7.3, Kotlin 2.0.21
+
 ## 📈 Roadmap
 
 ### ✅ Completado
@@ -100,6 +158,7 @@
 - App desktop Windows
 - Deploy producción
 - CI/CD Jenkins
+- App Mobile Android
 
 ### 🏗️ Arquitectura del proyecto
 **Web App:**
@@ -110,43 +169,13 @@
 - Arquitectura: Monolito modular (Desktop app standalone)
 - Patrón: Cliente-servidor local (React frontend + Go backend)
 
+**App Mobile:**
+- Arquitectura: Clean Architecture con MVVM (Model-View-ViewModel)
+- Patrón: Unidirectional Data Flow (UDF)
+
 ### 🔄 En Desarrollo
 - **i18n:** Soporte multi-idioma (ES/EN)
 - **OCR:** Procesamiento de PDFs escaneados
-- **Android App:** Kotlin nativo (ver abajo)
-- 
-## 📱 Android App (Planificado)
-
-#### **MODO BÁSICO**
-Procesamiento NLP local sin conexión:
-
-- 📄 Lectura de archivos .txt (Storage Access Framework)
-- 🔍 Extracción de keywords, entidades, URLs, emails (OpenNLP)
-- 📊 Categorización manual
-- 💾 Persistencia local (Room Database)
-- 📦 Exportar a ZIP
-- 🎨 Material 3 UI (Jetpack Compose)
-- 🌓 Dark/Light mode
-- 📱 Arquitectura ARM 32-bit/64-bit híbrida
-
-**Compatible con:** Android 8+ (API 26+)
-
----
-
-#### **MODO ULTRA (EXPERIMENTAL)**
-LLM local en dispositivo (solo 64-bit):
-
-- 🤖 Integración llama.cpp (JNI/NDK)
-- 📥 Usuario descarga modelo .gguf (Qwen3-2B, Gemma-2B)
-- 🧠 Carga de modelo a RAM (requiere 8GB+)
-- 💬 RAG básico con documentos locales
-- ⚡ Detección automática de hardware
-- 🔐 100% offline y privado
-
-**Requisitos:**
-- Android 13+ (64-bit)
-- 8GB RAM mínimo
-- Snapdragon 8 Gen+ o equivalente
 
 ## 📄 Licencia
 
