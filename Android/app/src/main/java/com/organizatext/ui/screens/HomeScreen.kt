@@ -157,6 +157,9 @@ fun HomeScreen(
                                 editingKeywordsDocId = document.id
                                 keywordsInput = document.tags
                             },
+                            onRenameDocument = { docId, newName ->
+                                documentViewModel.renameDocument(docId, newName)
+                            },
                             customCategories = customCategories
                         )
                     }

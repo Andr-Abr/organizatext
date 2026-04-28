@@ -16,15 +16,18 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -47,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.organizatext.data.room.DocumentEntity
 import com.organizatext.viewmodel.CategoryZipViewModel
@@ -79,15 +83,29 @@ fun CategoryScreen(
             .sortedWith(compareBy { if (it == "Sin categoría") "" else it })
     }
 
+    val docsWithoutCategory = remember(documents) {
+        documents.filter { it.category == "Sin categoría" && it.tags.isNotBlank() }
+    }
+    val validCategoriesForAuto = remember(allCategories) {
+        allCategories.filter { it != "Sin categoría" }
+    }
+
     var expandedCategories by remember { mutableStateOf(setOf<String>()) }
     var selectedCategories by remember { mutableStateOf(setOf<String>()) }
     var selectedDocIds by remember { mutableStateOf(setOf<String>()) }
     var showNewCategoryDialog by remember { mutableStateOf(false) }
     var showMoveDialog by remember { mutableStateOf(false) }
     var newCategoryName by remember { mutableStateOf("") }
-
     var zipDestinationUri by remember { mutableStateOf<Uri?>(null) }
     var pendingExportCategory by remember { mutableStateOf<String?>(null) }
+
+    // Estado para renombrar categoría
+    var renamingCategory by remember { mutableStateOf<String?>(null) }
+    var renameCategoryInput by remember { mutableStateOf("") }
+
+    // Estado para renombrar documento desde category screen
+    var renamingDocId by remember { mutableStateOf<String?>(null) }
+    var renameDocInput by remember { mutableStateOf("") }
 
     val zipLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/zip")
@@ -120,7 +138,6 @@ fun CategoryScreen(
                     }
                 },
                 actions = {
-                    // NUEVO: Botón para eliminar documentos seleccionados
                     if (selectedDocIds.isNotEmpty()) {
                         IconButton(onClick = {
                             scope.launch {
@@ -140,7 +157,6 @@ fun CategoryScreen(
                         }
                     }
 
-                    // Botón existente para eliminar categorías
                     if (selectedCategories.isNotEmpty()) {
                         IconButton(onClick = {
                             selectedCategories.forEach { cat ->
@@ -161,7 +177,6 @@ fun CategoryScreen(
                         }
                     }
 
-                    // NUEVO: Botón para mover documentos (ya existente, solo reubicado)
                     if (selectedDocIds.isNotEmpty()) {
                         IconButton(onClick = { showMoveDialog = true }) {
                             Icon(
@@ -194,8 +209,64 @@ fun CategoryScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showNewCategoryDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Nueva categoría")
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (ultraState.isModelLoaded &&
+                    docsWithoutCategory.isNotEmpty() &&
+                    validCategoriesForAuto.isNotEmpty()
+                ) {
+                    FloatingActionButton(
+                        onClick = {
+                            if (!ultraState.isAutoCategorizing) {
+                                ultraViewModel.autoCategorize(
+                                    documents = docsWithoutCategory,
+                                    availableCategories = validCategoriesForAuto,
+                                    onAssign = { docId, category ->
+                                        documentViewModel.assignCategory(docId, category)
+                                    }
+                                )
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        "Auto-categorizando ${docsWithoutCategory.size} documento(s)..."
+                                    )
+                                }
+                            }
+                        },
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    ) {
+                        if (ultraState.isAutoCategorizing) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(8.dp)
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                                if (ultraState.autoCategorizeProgress.isNotBlank()) {
+                                    Text(
+                                        text = ultraState.autoCategorizeProgress,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                }
+                            }
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.AutoFixHigh,
+                                contentDescription = "Auto-categorizar",
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+                    }
+                }
+
+                FloatingActionButton(onClick = { showNewCategoryDialog = true }) {
+                    Icon(Icons.Default.Add, contentDescription = "Nueva categoría")
+                }
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -257,6 +328,19 @@ fun CategoryScreen(
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                                // Ícono renombrar categoría — solo si no es "Sin categoría"
+                                if (category != "Sin categoría") {
+                                    IconButton(onClick = {
+                                        renameCategoryInput = category
+                                        renamingCategory = category
+                                    }) {
+                                        Icon(
+                                            Icons.Default.DriveFileRenameOutline,
+                                            contentDescription = "Renombrar categoría",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
                                 IconButton(onClick = {
                                     pendingExportCategory = category
                                     zipLauncher.launch("$category.zip")
@@ -316,6 +400,17 @@ fun CategoryScreen(
                                                     style = MaterialTheme.typography.bodySmall,
                                                     modifier = Modifier.weight(1f)
                                                 )
+                                                // Ícono renombrar documento
+                                                IconButton(onClick = {
+                                                    renameDocInput = doc.fileName
+                                                    renamingDocId = doc.id
+                                                }) {
+                                                    Icon(
+                                                        Icons.Default.DriveFileRenameOutline,
+                                                        contentDescription = "Renombrar documento",
+                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
                                                 TextButton(
                                                     onClick = { onNavigateToViewer(doc.id) }
                                                 ) {
@@ -332,6 +427,7 @@ fun CategoryScreen(
             }
         }
 
+        // Diálogo nueva categoría
         if (showNewCategoryDialog) {
             AlertDialog(
                 onDismissRequest = {
@@ -373,6 +469,76 @@ fun CategoryScreen(
             )
         }
 
+        // Diálogo renombrar categoría
+        renamingCategory?.let { oldName ->
+            AlertDialog(
+                onDismissRequest = { renamingCategory = null },
+                title = { Text("Renombrar categoría") },
+                text = {
+                    OutlinedTextField(
+                        value = renameCategoryInput,
+                        onValueChange = { renameCategoryInput = it },
+                        label = { Text("Nuevo nombre") },
+                        singleLine = true
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val trimmed = renameCategoryInput.trim()
+                        if (trimmed.isNotEmpty() && trimmed != oldName && trimmed !in allCategories) {
+                            documentViewModel.renameCategory(oldName, trimmed)
+                            scope.launch {
+                                snackbarHostState.showSnackbar(
+                                    "'$oldName' renombrada a '$trimmed'"
+                                )
+                            }
+                        }
+                        renamingCategory = null
+                    }) {
+                        Text("Guardar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { renamingCategory = null }) {
+                        Text("Cancelar")
+                    }
+                }
+            )
+        }
+
+        // Diálogo renombrar documento desde CategoryScreen
+        renamingDocId?.let { docId ->
+            AlertDialog(
+                onDismissRequest = { renamingDocId = null },
+                title = { Text("Renombrar archivo") },
+                text = {
+                    OutlinedTextField(
+                        value = renameDocInput,
+                        onValueChange = { renameDocInput = it },
+                        label = { Text("Nombre") },
+                        singleLine = true
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val trimmed = renameDocInput.trim()
+                        if (trimmed.isNotEmpty()) {
+                            documentViewModel.renameDocument(docId, trimmed)
+                        }
+                        renamingDocId = null
+                    }) {
+                        Text("Guardar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { renamingDocId = null }) {
+                        Text("Cancelar")
+                    }
+                }
+            )
+        }
+
+        // Diálogo mover documentos
         if (showMoveDialog) {
             var targetCategory by remember { mutableStateOf("") }
             AlertDialog(

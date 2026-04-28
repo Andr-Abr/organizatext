@@ -21,25 +21,19 @@ class ProcessDocumentUseCase @Inject constructor(
         val wordCount = content.split(Regex("\\s+")).filter { it.isNotBlank() }.size
         val useUltra = llmEngine.isLoaded() && wordCount >= 10
 
-        android.util.Log.d("ProcessDoc", "useUltra=$useUltra, wordCount=$wordCount, isLoaded=${llmEngine.isLoaded()}")
-
         val tags = if (useUltra) {
             // CAMBIO: Usar chunking para textos largos (más de 400 palabras)
             val result = if (wordCount > 400) {
-                android.util.Log.d("ProcessDoc", "Texto largo detectado ($wordCount palabras), usando chunking")
                 llmEngine.extractKeywordsChunked(content, topN = 10)
             } else {
-                android.util.Log.d("ProcessDoc", "Texto corto ($wordCount palabras), extracción normal")
                 llmEngine.extractKeywords(content, topN = 10)
             }
 
             when (result) {
                 is LlmResult.Success -> {
-                    android.util.Log.d("ProcessDoc", "LLM tags: ${result.response}")
                     result.response
                 }
                 is LlmResult.Error -> {
-                    android.util.Log.d("ProcessDoc", "LLM error: ${result.message}, usando RAKE fallback")
                     extractBasicKeywords(content)
                 }
             }

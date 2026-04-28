@@ -3,6 +3,7 @@ package com.organizatext.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.organizatext.data.prefs.UserPreferences
+import com.organizatext.data.room.DocumentEntity
 import com.organizatext.llm.DownloadProgress
 import com.organizatext.llm.LlmResult
 import com.organizatext.llm.MediaPipeLlmEngine
@@ -32,7 +33,9 @@ data class UltraUiState(
     val isProcessing: Boolean = false,
     val lastResult: String? = null,
     val errorMessage: String? = null,
-    val hfToken: String = ""
+    val hfToken: String = "",
+    val isAutoCategorizing: Boolean = false,
+    val autoCategorizeProgress: String = ""
 )
 
 @HiltViewModel
@@ -54,8 +57,12 @@ class UltraViewModel @Inject constructor(
         }
         val loadedId = llmEngine.getLoadedModelId()
         if (loadedId != null) {
-            val loadedModel = listOf(ModelInfo.Qwen25_0_5B, ModelInfo.Gemma3_1B)
-                .firstOrNull { it.id == loadedId }
+            val loadedModel = listOf(
+                ModelInfo.Qwen25_0_5B,
+                ModelInfo.Gemma3_1B,
+                ModelInfo.Qwen25_1_5B,
+                ModelInfo.Gemma4_E4B
+            ).firstOrNull { it.id == loadedId }
             _uiState.update {
                 it.copy(isModelLoaded = true, selectedModel = loadedModel)
             }
@@ -154,6 +161,75 @@ class UltraViewModel @Inject constructor(
                         it.copy(isProcessing = false, errorMessage = result.message)
                     }
                 }
+            }
+        }
+    }
+
+    fun autoCategorize(
+        documents: List<DocumentEntity>,
+        availableCategories: List<String>,
+        onAssign: (documentId: String, category: String) -> Unit
+    ) {
+        viewModelScope.launch {
+            if (!llmEngine.isLoaded()) return@launch
+
+            val validCategories = availableCategories.filter { it != "Sin categoría" }
+            if (validCategories.isEmpty()) return@launch
+
+            val docsToProcess = documents.filter {
+                it.category == "Sin categoría" && it.tags.isNotBlank()
+            }
+            if (docsToProcess.isEmpty()) return@launch
+
+            _uiState.update {
+                it.copy(
+                    isAutoCategorizing = true,
+                    autoCategorizeProgress = "0/${docsToProcess.size}"
+                )
+            }
+
+            docsToProcess.forEachIndexed { index, doc ->
+                _uiState.update {
+                    it.copy(
+                        autoCategorizeProgress = "${index + 1}/${docsToProcess.size}"
+                    )
+                }
+
+                val keywords = doc.tags.split(",")
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+
+                val prompt = """Categorías disponibles: ${validCategories.joinToString(", ")}
+
+Documento: "${doc.fileName}"
+Keywords: ${keywords.joinToString(", ")}
+
+Respondé ÚNICAMENTE con el nombre exacto de una categoría de la lista. Si ninguna encaja, respondé: Sin categoría"""
+
+                when (val result = llmEngine.chat(prompt)) {
+                    is LlmResult.Success -> {
+                        val suggested = result.response
+                            .trim()
+                            .lines()
+                            .firstOrNull { it.isNotBlank() }
+                            ?.trim() ?: ""
+
+                        val matched = validCategories.firstOrNull {
+                            it.equals(suggested, ignoreCase = true)
+                        }
+                        if (matched != null) {
+                            onAssign(doc.id, matched)
+                        }
+                    }
+                    is LlmResult.Error -> { /* mantiene en Sin categoría */ }
+                }
+            }
+
+            _uiState.update {
+                it.copy(
+                    isAutoCategorizing = false,
+                    autoCategorizeProgress = ""
+                )
             }
         }
     }

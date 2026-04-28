@@ -89,4 +89,22 @@ class DocumentViewModel @Inject constructor(
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
     }
+
+    fun renameDocument(documentId: String, newName: String) {
+        viewModelScope.launch {
+            repository.renameDocument(documentId, newName.trim())
+        }
+    }
+
+    fun renameCategory(oldName: String, newName: String) {
+        viewModelScope.launch {
+            userPreferences.removeCustomCategory(oldName)
+            userPreferences.addCustomCategory(newName)
+            allDocuments.value
+                .filter { it.category == oldName }
+                .forEach { doc ->
+                    assignCategoryUseCase(doc.id, newName)
+                }
+        }
+    }
 }

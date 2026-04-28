@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -22,6 +24,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -54,11 +57,15 @@ fun FileCard(
     onDeleteClick: () -> Unit,
     onCategoryChange: (String) -> Unit,
     onEditKeywords: () -> Unit,
+    onRenameDocument: (String, String) -> Unit,
     customCategories: List<String> = emptyList(),
     isSelected: Boolean = false,
     onSelectionChange: ((Boolean) -> Unit)? = null
 ) {
     var showCategoryMenu by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var renameInput by remember { mutableStateOf("") }
+
     val tags = remember(document.tags) {
         document.tags.split(",").filter { it.isNotBlank() }
     }
@@ -108,6 +115,17 @@ fun FileCard(
                         contentDescription = "PII detectado",
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(end = 4.dp)
+                    )
+                }
+
+                IconButton(onClick = {
+                    renameInput = document.fileName
+                    showRenameDialog = true
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.DriveFileRenameOutline,
+                        contentDescription = "Renombrar",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -192,6 +210,37 @@ fun FileCard(
                     label = { Text("Ver contenido") }
                 )
             }
+        }
+
+        if (showRenameDialog) {
+            AlertDialog(
+                onDismissRequest = { showRenameDialog = false },
+                title = { Text("Renombrar archivo") },
+                text = {
+                    OutlinedTextField(
+                        value = renameInput,
+                        onValueChange = { renameInput = it },
+                        label = { Text("Nombre") },
+                        singleLine = true
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val trimmed = renameInput.trim()
+                        if (trimmed.isNotEmpty()) {
+                            onRenameDocument(document.id, trimmed)
+                        }
+                        showRenameDialog = false
+                    }) {
+                        Text("Guardar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showRenameDialog = false }) {
+                        Text("Cancelar")
+                    }
+                }
+            )
         }
     }
 }
